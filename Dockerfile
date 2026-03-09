@@ -19,6 +19,10 @@ RUN wget -q https://huggingface.co/BigDannyPt/Wan-2.2-Remix-GGUF/resolve/main/I2
 	wget -q https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors -O /ComfyUI/models/vae/wan_2.1_vae.safetensors && \
 	wget -q https://huggingface.co/city96/umt5-xxl-encoder-gguf/resolve/main/umt5-xxl-encoder-Q8_0.gguf -O /ComfyUI/models/text_encoders/umt5-xxl-encoder-Q8_0.gguf
 
+RUN wget -q https://huggingface.co/datasets/hijdese2020/wan22_datalora/resolve/main/allnsfw/wan22-k3nk4llinon3-15epoc-full-low-k3nk.safetensors -O /ComfyUI/models/loras/wan22-k3nk4llinon3-15epoc-full-low-k3nk.safetensors
+RUN wget -q https://huggingface.co/datasets/hijdese2020/wan22_datalora/resolve/main/allnsfw/wan22-k3nk4llinon3-16epoc-full-high-k3nk.safetensors -O /ComfyUI/models/loras/wan22-k3nk4llinon3-16epoc-full-high-k3nk.safetensors
+
+
 # Si hay colisiones de nombres, el último COPY gana.
 #COPY --from=assets_b /ComfyUI/models/ /ComfyUI/models/
 #COPY --from=assets_h /ComfyUI/models/ /ComfyUI/models/
