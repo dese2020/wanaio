@@ -37,7 +37,7 @@ RUN wget -q https://huggingface.co/datasets/hijdese2020/wan22_datalora/resolve/m
 # (Opcional) Verifica permisos del entrypoint si no estuvieran en la base:
 # RUN chmod +x /entrypoint.sh
 COPY . .
-RUN rm -rf /ComfyUI/custom_nodes/ComfyUI-Manager
+RUN rm -rf /ComfyUI/custom_nodes/ComfyUI-Manager/
 COPY extra_model_paths.yaml /ComfyUI/extra_model_paths.yaml
 #COPY rife49.pth /ComfyUI/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife/rife49.pth
 RUN chmod +x /entrypoint.sh
