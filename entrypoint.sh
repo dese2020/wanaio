@@ -1,32 +1,83 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status.
 set -e
 
-# Start ComfyUI in the background
-echo "Starting ComfyUI in the background..."
-python /ComfyUI/main.py --listen --use-sage-attention &
+echo "========== RUNPOD WORKER INIT =========="
 
-# Wait for ComfyUI to be ready
-echo "Waiting for ComfyUI to be ready..."
-max_wait=120  # 최대 2분 대기
+########################################
+# 1. GPU VALIDATION (FAIL FAST)
+########################################
+echo "[CHECK] GPU info..."
+
+GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1 || echo "unknown")
+VRAM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 || echo "0")
+
+echo "[INFO] GPU: $GPU_NAME"
+echo "[INFO] VRAM: ${VRAM}MB"
+
+# Ajusta según tu modelo
+MIN_VRAM=16000
+
+if [ "$VRAM" -lt "$MIN_VRAM" ]; then
+    echo "[FAIL] GPU incompatible (VRAM < ${MIN_VRAM}MB)"
+    exit 2
+fi
+
+########################################
+# 2. START COMFYUI
+########################################
+echo "[START] Launching ComfyUI..."
+
+python /ComfyUI/main.py --listen --use-sage-attention &
+COMFY_PID=$!
+
+echo "[INFO] ComfyUI PID: $COMFY_PID"
+
+########################################
+# 3. EARLY CRASH DETECTION
+########################################
+sleep 5
+
+if ! kill -0 $COMFY_PID 2>/dev/null; then
+    echo "[FAIL] ComfyUI crashed immediately"
+    exit 3
+fi
+
+########################################
+# 4. SMART HEALTHCHECK
+########################################
+echo "[WAIT] Waiting for ComfyUI API..."
+
+max_wait=60
 wait_count=0
+
 while [ $wait_count -lt $max_wait ]; do
+
+    # proceso muerto → salir
+    if ! kill -0 $COMFY_PID 2>/dev/null; then
+        echo "[FAIL] ComfyUI died during startup"
+        exit 4
+    fi
+
+    # API OK
     if curl -s http://127.0.0.1:8188/ > /dev/null 2>&1; then
-        echo "ComfyUI is ready!"
+        echo "[OK] ComfyUI is ready"
         break
     fi
-    echo "Waiting for ComfyUI... ($wait_count/$max_wait)"
+
+    echo "[WAIT] ${wait_count}s / ${max_wait}s"
     sleep 2
     wait_count=$((wait_count + 2))
 done
 
 if [ $wait_count -ge $max_wait ]; then
-    echo "Error: ComfyUI failed to start within $max_wait seconds"
-    exit 1
+    echo "[FAIL] Timeout waiting for ComfyUI"
+    kill -9 $COMFY_PID
+    exit 5
 fi
 
-# Start the handler in the foreground
-# 이 스크립트가 컨테이너의 메인 프로세스가 됩니다.
-echo "Starting the handler..."
+########################################
+# 5. START HANDLER
+########################################
+echo "[START] Handler..."
+
 exec python handler.py
