@@ -1,4 +1,4 @@
-FROM wlsdml1114/engui_genai-base_blackwell:1.1 AS runtime
+FROM wlsdml1114/engui_base_128_blackwell_13:1.2 AS runtime
 
 
 RUN pip install -U "huggingface_hub[hf_transfer]"
